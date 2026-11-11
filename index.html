@@ -192,6 +192,19 @@ table.scale tr.rev td{background:var(--op-soft)}
 .inq input{width:100%;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit;font-size:13px;padding:6px 8px;outline:none}
 .inq input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
 .inq input::placeholder{color:var(--muted);opacity:.75}
+details.sub{border-top:1px dashed var(--line);padding-top:10px}
+details.sub>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--accent)}
+details.sub>summary::-webkit-details-marker{display:none}
+details.sub>summary::before{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);margin:0 4px 0 2px;transition:transform .15s}
+details.sub[open]>summary::before{transform:rotate(45deg)}
+details.sub>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.subbody{display:flex;flex-direction:column;gap:12px;padding-top:12px}
+.in input:disabled{cursor:default}
+.kres td{padding:5px 4px;font-size:13px;border-bottom:1px solid var(--soft)}
+.kres td.n{font-family:var(--f-mono)}
+.kres tr.key td{font-weight:500;color:var(--accent)}
+.kres .note td{color:var(--warn);font-size:12px}
+.btn:disabled{opacity:.45;cursor:default}
 .pill{display:inline-block;font-size:11px;border-radius:4px;padding:0 5px;margin-left:6px;font-family:var(--f-body)}
 .pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.bad{background:var(--bad-soft);color:var(--bad)}.pill.warn{background:var(--warn-soft);color:var(--warn)}
 .pill.base{background:var(--soft);color:var(--muted)}.pill.rev{background:var(--op-soft);color:var(--op)}
@@ -277,6 +290,27 @@ table.scale tr.rev td{background:var(--op-soft)}
     <div data-f="Lll"></div><div data-f="Lph"></div><div data-f="tau"></div>
     <div data-f="mi"></div>
   </div>
+  <details class="sub" id="dKe">
+    <summary>由波形計算 Ke<button class="info" type="button" data-i="keTool" aria-label="由波形計算 Ke 說明">i</button></summary>
+    <div class="subbody">
+      <div class="fields">
+        <div class="f"><div class="lab"><label for="kwN">拖轉轉速 N</label></div>
+          <div class="in"><input id="kwN" type="number" step="any" placeholder="空白＝由波形推算"><select class="unit" id="kwNu" aria-label="拖轉轉速單位"></select></div></div>
+        <div class="f"><div class="lab"><label for="kwKind">量測位置</label></div>
+          <select class="wide" id="kwKind"><option value="line">線電壓（兩出線間）</option><option value="phase">相電壓（出線對中性點）</option></select></div>
+        <div class="f"><div class="lab"><label for="kwTu">時間欄單位</label></div>
+          <div class="in"><input value="時間" disabled aria-hidden="true" tabindex="-1" style="color:var(--muted)"><select class="unit" id="kwTu" aria-label="時間欄單位"></select></div></div>
+        <div class="f"><div class="lab"><label for="kwDt">取樣間隔 Δt</label></div>
+          <div class="in"><input id="kwDt" type="number" step="any" placeholder="僅電壓一欄時使用"><select class="unit" id="kwDtu" aria-label="取樣間隔單位"></select></div></div>
+        <div class="f full"><div class="lab"><label for="kwData">波形資料</label></div>
+          <textarea id="kwData" spellcheck="false" placeholder="貼上示波器匯出的資料&#10;每行：時間, 電壓&#10;或只有電壓一欄（需填取樣間隔）"></textarea>
+          <p class="err" id="kwErr" hidden></p></div>
+      </div>
+      <table class="kres"><tbody id="kwRes"></tbody></table>
+      <div class="row" style="justify-content:flex-end"><span class="tag" id="kwMsg" aria-live="polite"></span>
+        <button class="btn ghost" id="kwApSq" type="button" disabled>套用方波 Ke</button><button class="btn" id="kwApSin" type="button" disabled>套用正弦 Ke</button></div>
+    </div>
+  </details>
 </section>
 
 <section class="card" id="scaleCard">
@@ -423,6 +457,7 @@ const INFO={
   sList:'要推測的轉速，可輸入多個，以逗號或空白分隔。',
   rev:'勾選後，依 Q、P 或 T 的目標值反推轉速，以「反推」標示在表格中。',
   inq:'設計馬達最基本需要的資訊，可自行填寫或空白複製後寄給風扇 RD，空白項目會以底線保留。',
+  keTool:'拖轉馬達、出線開路，用示波器量反電動勢波形，匯出 CSV 貼上即可。<br>工具取波形中整數個電氣週期做傅立葉分析：<code>基波峰值 = √(a₁² + b₁²)</code>，平頂值取 |v| ≥ 90% 峰值區段的平均。<br>轉速留空時由波形頻率推算（需正確的極數）。量相電壓時，基波會乘 √3 換成線電壓。',
   eff:'<code>空氣功率 ÷ 輸入電功率</code>，不含鐵損與控制 IC 自耗。',
   pq:'虛線為參考曲線，實線為換算到需求轉速後的曲線，點線為通過目標點的系統阻抗。',
   tn:'藍線為馬達全電壓下的 T–N 特性，橘線為風扇負載（∝N² + 摩擦）。交點為全壓自然轉速，控制器需降速到目標轉速。正弦模式忽略電感。'
@@ -508,11 +543,70 @@ $('mA').onclick=()=>{setMode('A');update();};$('mB').onclick=()=>{setMode('B');u
 $('dSq').onclick=()=>{setDrive('sq');update();};$('dSin').onclick=()=>{setDrive('sin');update();};
 setMode(st.mode);setDrive(st.drive);showL();
 
+/* ---------- Ke from waveform ---------- */
+if(!st.kw||typeof st.kw!=='object')st.kw={};
+const kw=Object.assign({N:'',Nu:'rpm',kind:'line',tu:'ms',dt:'',dtu:'us',txt:''},st.kw);st.kw=kw;
+$('kwNu').innerHTML=opts('N',kw.Nu);$('kwTu').innerHTML=opts('t',kw.tu);$('kwDtu').innerHTML=opts('t',kw.dtu);
+$('kwN').value=kw.N;$('kwKind').value=kw.kind;$('kwDt').value=kw.dt;$('kwData').value=kw.txt;
+let kwOut=null;
+function kwSave(){kw.N=$('kwN').value;kw.Nu=$('kwNu').value;kw.kind=$('kwKind').value;kw.tu=$('kwTu').value;kw.dt=$('kwDt').value;kw.dtu=$('kwDtu').value;
+  kw.txt=$('kwData').value.length<400000?$('kwData').value:'';save();}
+function kwCalc(){
+  const err=$('kwErr'),res=$('kwRes');err.hidden=true;kwOut=null;$('kwApSq').disabled=$('kwApSin').disabled=true;
+  const fail=m=>{err.textContent=m;err.hidden=false;res.innerHTML='';};
+  const txt=$('kwData').value.trim();if(!txt){res.innerHTML='';return;}
+  const poles=get('poles');if(!(poles>0))return fail('請先在上方填寫極數。');
+  const rows=[];for(const l of txt.split(/\r?\n/)){const p=l.trim().split(/[\s,;\t]+/).map(Number);if(p.length&&p.every(isFinite))rows.push(p);}
+  if(rows.length<16)return fail('有效資料點太少，至少需要 16 點。');
+  let t,v;
+  if(rows[0].length>=2){t=rows.map(r=>toB('t',r[0],kw.tu));v=rows.map(r=>r[1]);}
+  else{const dt=toB('t',parseFloat(kw.dt),kw.dtu);if(!(dt>0))return fail('只有電壓一欄時，請填寫取樣間隔 Δt。');v=rows.map(r=>r[0]);t=v.map((_,i)=>i*dt);}
+  for(let i=1;i<t.length;i++)if(!(t[i]>t[i-1]))return fail('時間欄需由小到大遞增。');
+  const mean=v.reduce((a,b)=>a+b,0)/v.length,w=v.map(x=>x-mean);
+  const zc=[];for(let i=1;i<w.length;i++)if(w[i-1]<0&&w[i]>=0)zc.push(t[i-1]+(t[i]-t[i-1])*(-w[i-1])/(w[i]-w[i-1]));
+  const Nin=toB('N',parseFloat(kw.N),kw.Nu);
+  let fe=NaN;if(zc.length>=2)fe=(zc.length-1)/(zc[zc.length-1]-zc[0]);
+  const feN=Nin>0?poles/2*Nin/60:NaN;
+  const Te=isFinite(fe)?1/fe:1/feN;if(!isFinite(Te))return fail('波形不足一個完整週期，請輸入拖轉轉速。');
+  const t0=zc.length?zc[0]:t[0],K=Math.floor((t[t.length-1]-t0)/Te+1e-9);
+  if(K<1)return fail('資料長度不足一個電氣週期。');
+  const tEnd=t0+K*Te,idx=[];for(let i=0;i<t.length;i++)if(t[i]>=t0-1e-15&&t[i]<=tEnd+1e-15)idx.push(i);
+  const H=13,c=[];for(let n=1;n<=H;n++){let a=0,b=0;
+    for(let j=1;j<idx.length;j++){const i0=idx[j-1],i1=idx[j],dt=t[i1]-t[i0],th0=TAU*n*(t[i0]-t0)/Te,th1=TAU*n*(t[i1]-t0)/Te;
+      a+=(w[i0]*Math.cos(th0)+w[i1]*Math.cos(th1))/2*dt;b+=(w[i0]*Math.sin(th0)+w[i1]*Math.sin(th1))/2*dt;}
+    const span=t[idx[idx.length-1]]-t[idx[0]];c.push(Math.hypot(a,b)*2/span);}
+  const V1=c[0],thd=Math.sqrt(c.slice(1).reduce((s,x)=>s+x*x,0))/V1;
+  let pk=0;idx.forEach(i=>{pk=Math.max(pk,Math.abs(w[i]));});
+  const top=idx.map(i=>Math.abs(w[i])).filter(x=>x>=0.9*pk),flat=top.reduce((a,b)=>a+b,0)/top.length;
+  const Nmeas=isFinite(fe)?fe*120/poles:NaN,Nuse=Nin>0?Nin:Nmeas;
+  if(!(Nuse>0))return fail('無法判定轉速，請輸入拖轉轉速。');
+  const line=kw.kind==='line',V1L=line?V1:V1*Math.sqrt(3),flatL=line?flat:NaN;
+  const keSin=V1L/(Nuse/1000),keSq=flatL/(Nuse/1000);
+  kwOut={keSin,keSq};
+  const ku=st.vals.Ke.u,kf=x=>fmt(fromB('Ke',x,ku),4)+' '+ul('Ke',ku),nu=kw.Nu;
+  const rowsH=[['電氣頻率',isFinite(fe)?fmt(fe,5)+' Hz':'–','分析週期數 '+K],
+    ['波形推算轉速',isFinite(Nmeas)?fmt(fromB('N',Nmeas,nu),5)+' '+ul('N',nu):'–','fe × 120 ÷ 極數'],
+    [line?'基波峰值':'相電壓基波峰值',fmt(V1,4)+' V',line?'':'× √3 = '+fmt(V1L,4)+' V（線）'],
+    ['平頂值',line?fmt(flat,4)+' V':'–',line?'|v| ≥ 90% 峰值平均':'需量線電壓'],
+    ['波形峰值',fmt(pk,4)+' V',''],['THD',fmt(thd*100,3)+' %','2–13 次諧波']];
+  let h=rowsH.map(r=>`<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td class="d">${r[2]}</td></tr>`).join('');
+  h+=`<tr class="key"><td>正弦 Ke</td><td class="n">${kf(keSin)}</td><td class="d">基波峰值 ÷ krpm</td></tr>`;
+  h+=`<tr class="key"><td>方波 Ke</td><td class="n">${line?kf(keSq):'–'}</td><td class="d">平頂值 ÷ krpm</td></tr>`;
+  if(Nin>0&&isFinite(Nmeas)&&Math.abs(Nmeas/Nin-1)>0.02)h+=`<tr class="note"><td colspan="3">輸入轉速與波形推算轉速相差 ${fmt(Math.abs(Nmeas/Nin-1)*100,2)} %，請確認極數或轉速。</td></tr>`;
+  res.innerHTML=h;$('kwApSin').disabled=false;$('kwApSq').disabled=!line;}
+function kwApply(k){if(!kwOut||!isFinite(kwOut[k]))return;const o=st.vals.Ke;o.v=fromB('Ke',kwOut[k],o.u);$('Ke').value=rnd(o.v);
+  setDrive(k==='keSin'?'sin':'sq');update();$('kwMsg').textContent='已套用，驅動方式切換為'+(k==='keSin'?'正弦':'方波');setTimeout(()=>$('kwMsg').textContent='',2500);}
+['kwN','kwDt','kwData'].forEach(id=>$(id).addEventListener('input',()=>{kwSave();kwCalc();}));
+['kwNu','kwKind','kwTu','kwDtu'].forEach(id=>$(id).addEventListener('change',()=>{kwSave();kwCalc();}));
+$('kwApSin').onclick=()=>kwApply('keSin');$('kwApSq').onclick=()=>kwApply('keSq');
+$('poles').addEventListener('input',kwCalc);$('Ke_u').addEventListener('change',kwCalc);
+kwCalc();
+
 /* ---------- collapsible cards ---------- */
 if(!st.open||typeof st.open!=='object')st.open={};
-document.querySelectorAll('details.card[id]').forEach(d=>{if(d.id in st.open)d.open=st.open[d.id];
+document.querySelectorAll('details.card[id],details.sub[id]').forEach(d=>{if(d.id in st.open)d.open=st.open[d.id];
   d.addEventListener('toggle',()=>{st.open[d.id]=d.open;save();});});
-document.querySelectorAll('details.card>summary').forEach(sm=>sm.addEventListener('click',e=>{if(e.target.closest('button,select,input,a'))e.preventDefault();}));
+document.querySelectorAll('details.card>summary,details.sub>summary').forEach(sm=>sm.addEventListener('click',e=>{if(e.target.closest('button,select,input,a'))e.preventDefault();}));
 
 /* ---------- inquiry form ---------- */
 const INQ=[['op_pq','目標操作點 P、Q','例：55 Pa @ 0.66 L/s'],['fan_curve','參考 PQ 曲線','量測轉速與各點 Q、P，有轉矩或功率更好'],
