@@ -179,6 +179,16 @@ table.scale tr.rev td{background:var(--op-soft)}
 .st td.m{font-weight:500}
 .st td.m.ok{color:var(--ok)}.st td.m.warn{color:var(--warn)}.st td.m.bad{color:var(--bad)}
 .st .empty{text-align:left;font-family:var(--f-body);color:var(--muted)}
+.inq{display:flex;flex-direction:column;gap:14px}
+.inq .ig{display:flex;flex-direction:column;gap:8px}
+.inq .ih{font-size:13px;font-weight:500;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:4px}
+.inq .ir{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr);gap:4px 12px;align-items:center}
+@media (max-width:560px){.inq .ir{grid-template-columns:minmax(0,1fr)}}
+.inq .il{font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.inq .req{font-size:10.5px;color:var(--op);border:1px solid var(--op);border-radius:3px;padding:0 4px;line-height:1.5}
+.inq input{width:100%;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit;font-size:13px;padding:6px 8px;outline:none}
+.inq input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.inq input::placeholder{color:var(--muted);opacity:.75}
 .pill{display:inline-block;font-size:11px;border-radius:4px;padding:0 5px;margin-left:6px;font-family:var(--f-body)}
 .pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.bad{background:var(--bad-soft);color:var(--bad)}.pill.warn{background:var(--warn-soft);color:var(--warn)}
 .pill.base{background:var(--soft);color:var(--muted)}.pill.rev{background:var(--op-soft);color:var(--op)}
@@ -327,6 +337,12 @@ table.scale tr.rev td{background:var(--op-soft)}
     <pre class="spec" id="spec"></pre>
   </section>
 
+  <section class="card">
+    <div class="sec-h"><h2>需求詢問單</h2><button class="info" type="button" data-i="inq" aria-label="需求詢問單說明">i</button>
+      <div class="row" style="margin-left:auto"><span class="tag" id="copyMsg3" aria-live="polite"></span><button class="btn ghost" id="inqClear" type="button">清除</button><button class="btn" id="inqCopy" type="button">複製詢問單</button></div></div>
+    <div id="inqForm" class="inq"></div>
+  </section>
+
   <details class="card">
     <summary><h2>參數定義</h2></summary>
     <div class="body"><dl class="gl" id="glossary"></dl></div>
@@ -408,6 +424,7 @@ const INFO={
   scale:'相同扇葉與流道下：<code>Q∝N、P∝N²、T∝N²、軸功率∝N³</code>。<br>電壓裕度使用卡片 3 的馬達參數，並含摩擦轉矩。',
   sList:'要推測的轉速，可輸入多個，以逗號或空白分隔。',
   rev:'勾選後，依 Q、P 或 T 的目標值反推轉速，以「反推」標示在表格中。',
+  inq:'當風扇 RD 有新的操作點需求或要改善現有馬達時，請對方提供這些資訊。標示「必要」的項目缺少時無法開始設計。<br>可直接在欄位填寫，或空白複製後寄給風扇 RD 填寫，空白項目會以底線保留。',
   eff:'<code>空氣功率 ÷ 輸入電功率</code>，不含鐵損與控制 IC 自耗。',
   pq:'虛線為參考曲線，實線為換算到需求轉速後的曲線，點線為通過目標點的系統阻抗。',
   tn:'藍線為馬達全電壓下的 T–N 特性，橘線為風扇負載（∝N² + 摩擦）。交點為全壓自然轉速，控制器需降速到目標轉速。正弦模式忽略電感。'
@@ -432,7 +449,7 @@ const SAMPLE_ROWS=[[0,120,0.080],[0.1180,112,0.086],[0.2360,98,0.093],[0.3540,82
 
 function defaults(){const v={};for(const id in F)v[id]={v:F[id].v,u:F[id].u};
   return{vals:v,mode:'A',drive:'sq',Lsrc:'ll',cRows:SAMPLE_ROWS,cQu:'Ls',cPu:'Pa',cTu:'mNm',sList:'8436, 9860, 10000',sListU:'rpm',
-    sRevK:'q',sRevOn:false,sRev:{v:0.66,u:'Ls'},dispN:'rpm',dispT:'mNm',dispI:'mA'};}
+    sRevK:'q',sRevOn:false,sRev:{v:0.66,u:'Ls'},inq:{},dispN:'rpm',dispT:'mNm',dispI:'mA'};}
 let st=defaults();
 try{const s=JSON.parse(localStorage.getItem('fanMotorTool3')||'null');if(s){const d=defaults();st={...d,...s,vals:{...d.vals,...(s.vals||{})}};
   if(!s.cRows&&typeof s.curve==='string'){const rows=s.curve.split('\n').filter(l=>!/^\s*(#|$)/.test(l)).map(l=>l.trim().split(/[\s,;\t]+/).slice(0,3));if(rows.length)st.cRows=rows.map(r=>[r[0]||'',r[1]||'',r[2]||'']);}
@@ -492,6 +509,28 @@ function setDrive(d){st.drive=d;$('dSq').setAttribute('aria-pressed',d==='sq');$
 $('mA').onclick=()=>{setMode('A');update();};$('mB').onclick=()=>{setMode('B');update();};
 $('dSq').onclick=()=>{setDrive('sq');update();};$('dSin').onclick=()=>{setDrive('sin');update();};
 setMode(st.mode);setDrive(st.drive);showL();
+
+/* ---------- inquiry form ---------- */
+const INQ=[
+  ['一、操作點需求',[['op_pq','目標操作點 P、Q',1,'例：55 Pa @ 0.66 L/s；多點請逐一列出'],['op_multi','其他需兼顧的操作點',0,'例：最大風量點、高阻抗點、低速點'],['op_env','使用環境',0,'環境溫度、海拔或空氣密度']]],
+  ['二、扇葉與流道',[['fan_type','扇葉型式與尺寸',1,'軸流／離心／混流；外徑、葉片數'],['fan_curve','參考 PQ 曲線',1,'量測轉速與各點 Q、P；最好附轉矩或輸入功率'],['fan_sys','系統阻抗或實機配置',0,'散熱片、濾網、機殼，或實機量測的阻抗曲線'],['fan_inertia','扇葉重量與轉動慣量',0,'用於啟動時間與加速評估']]],
+  ['三、電氣與控制',[['el_v','供電電壓與範圍',1,'額定、最低、最高；例：12 V（10.8–13.2 V）'],['el_lim','電流或功率上限',1,'例：最大 0.2 A／2.4 W；啟動電流限制'],['el_drv','驅動方式與 IC',0,'方波／正弦；指定 IC 型號或由馬達端選定'],['el_ctrl','調速與訊號',0,'PWM 調速範圍與頻率、FG／RD 輸出、定轉速控制']]],
+  ['四、機構限制',[['me_space','馬達可用空間',1,'最大外徑、高度、出線方向'],['me_shaft','軸與安裝方式',0,'軸徑、軸長、與扇葉的結合方式'],['me_bearing','軸承型式',0,'滾珠／含油／流體動壓']]],
+  ['五、可靠度與噪音',[['re_life','壽命與溫度',0,'例：L10 50,000 h @ 40 °C'],['re_noise','噪音與振動',0,'dBA @ 量測距離、不平衡量'],['re_other','保護與法規',0,'鎖轉保護、反接保護、IP 等級、安規']]],
+  ['六、專案資訊',[['pj_time','時程與數量',0,'樣品日期、量產時間、年需求量'],['pj_cost','目標成本',0,''],['pj_base','現有設計與待改善問題',0,'改善案：現有馬達型號、實測數據、目前問題']]]
+];
+if(!st.inq||typeof st.inq!=='object')st.inq={};
+function renderInq(){$('inqForm').innerHTML=INQ.map(([g,items])=>`<div class="ig"><div class="ih">${g}</div>`+items.map(([id,l,r,ph])=>
+  `<div class="ir"><label class="il" for="iq_${id}">${l}${r?'<span class="req">必要</span>':''}</label><input id="iq_${id}" type="text" data-q="${id}" placeholder="${ph}" value="${(st.inq[id]||'').replace(/"/g,'&quot;')}"></div>`).join('')+'</div>').join('');}
+renderInq();
+$('inqForm').addEventListener('input',e=>{const q=e.target.dataset.q;if(!q)return;st.inq[q]=e.target.value;save();resetClear();});
+function inqText(){return['【風扇馬達設計需求詢問單】','標示（必要）的項目缺少時無法開始設計。',''].concat(...INQ.map(([g,items])=>[g,...items.map(([id,l,r])=>'・'+l+(r?'（必要）':'')+'：'+((st.inq[id]||'').trim()||'________')),''])).join('\n').trim();}
+$('inqCopy').onclick=()=>copyText(inqText(),'copyMsg3','已複製',null);
+let clearArmed=false;
+function resetClear(){clearArmed=false;$('inqClear').textContent='清除';}
+$('inqClear').onclick=()=>{if(!Object.values(st.inq).some(v=>v&&v.trim()))return;
+  if(!clearArmed){clearArmed=true;$('inqClear').textContent='確定清除？';setTimeout(()=>{if(clearArmed)resetClear();},3000);return;}
+  st.inq={};save();renderInq();resetClear();$('copyMsg3').textContent='已清除';setTimeout(()=>$('copyMsg3').textContent='',1800);};
 
 /* ---------- info popover ---------- */
 const pop=$('pop');let popBtn=null;
