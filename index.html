@@ -167,25 +167,18 @@ table.scale th.r,table.scale td.r{text-align:right}
 table.scale td small{color:var(--muted);font-size:11px;margin-left:3px}
 table.scale tr.base td{color:var(--muted)}
 table.scale tr.rev td{background:var(--op-soft)}
-.slist{display:flex;flex-direction:column;gap:6px}
-.sitems{display:flex;flex-direction:column;gap:6px}
-.sg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 8px}
-.shd{padding:0 10px;font-size:11.5px;color:var(--muted);font-weight:500}
-.shd span{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sit{border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;background:var(--panel)}
-.sit.base{background:var(--soft)}
-.sit.rev{background:var(--op-soft);border-color:var(--op)}
-.sh{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
-.sn{font-family:var(--f-mono);font-size:15px;font-weight:500}
-.sn small,.sr{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-weight:400}
-.sv{margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;white-space:nowrap}
-.sv b{font-family:var(--f-mono);font-weight:500;color:var(--fg);margin-left:4px}
-.sc{display:flex;flex-direction:column;align-items:flex-end;min-width:0}
-.sc .sl{display:none;font-size:11px;color:var(--muted)}
-.sc .sx{font-family:var(--f-mono);font-size:13.5px;white-space:nowrap}
-.sc .sd{font-family:var(--f-mono);font-size:11px;color:var(--muted);min-height:15px}
-.sempty{font-size:13px;color:var(--muted);padding:8px 0}
-@media (max-width:400px){.shd{display:none}.sg{grid-template-columns:repeat(2,minmax(0,1fr))}.sc{align-items:flex-start}.sc .sl{display:block}}
+.st{width:100%;table-layout:fixed;border-collapse:collapse}
+.st th{font-size:11.5px;font-weight:500;color:var(--muted);text-align:right;padding:4px 4px 6px;line-height:1.3;white-space:normal;border-bottom:1px solid var(--line);vertical-align:bottom}
+.st th:first-child{text-align:left}
+.st th small{display:block;font-weight:400;font-family:var(--f-mono);font-size:11px}
+.st td{padding:7px 4px;text-align:right;border-bottom:1px solid var(--soft);vertical-align:top;font-family:var(--f-mono);font-size:13px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st td:first-child{text-align:left;font-weight:500}
+.st td small{display:block;font-size:10.5px;color:var(--muted);font-weight:400}
+.st tr.base td{background:var(--soft)}
+.st tr.rev td{background:var(--op-soft)}
+.st td.m{font-weight:500}
+.st td.m.ok{color:var(--ok)}.st td.m.warn{color:var(--warn)}.st td.m.bad{color:var(--bad)}
+.st .empty{text-align:left;font-family:var(--f-body);color:var(--muted)}
 .pill{display:inline-block;font-size:11px;border-radius:4px;padding:0 5px;margin-left:6px;font-family:var(--f-body)}
 .pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.bad{background:var(--bad-soft);color:var(--bad)}.pill.warn{background:var(--warn-soft);color:var(--warn)}
 .pill.base{background:var(--soft);color:var(--muted)}.pill.rev{background:var(--op-soft);color:var(--op)}
@@ -290,7 +283,7 @@ table.scale tr.rev td{background:var(--op-soft)}
         <input id="sRevV" type="number" step="any" aria-label="反推目標值"><select class="unit" id="sRevV_u" aria-label="反推目標值單位"></select></div>
     </div>
   </div>
-  <div class="slist"><div class="sg shd" id="scaleHead"></div><div class="sitems" id="scaleBody"></div></div>
+  <table class="st"><colgroup><col style="width:19%"><col><col><col><col><col style="width:15%"></colgroup><thead><tr id="scaleHead"></tr></thead><tbody id="scaleBody"></tbody></table>
   <div class="row"><span class="tag" id="copyMsg2" aria-live="polite"></span><button class="btn ghost" id="copyScale" type="button" style="margin-left:auto">複製表格</button></div>
 </section>
 </div>
@@ -350,8 +343,8 @@ const TAU=2*Math.PI;
 const mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):{matches:false};
 function isDark(){const a=document.documentElement.getAttribute('data-theme');return a?a==='dark':mq.matches;}
 function paintTheme(){const d=isDark();$('icoSun').hidden=d;$('icoMoon').hidden=!d;$('themeLab').textContent=d?'深色':'明亮';$('themeBtn').setAttribute('aria-pressed',d);}
-try{const t=localStorage.getItem('fmTheme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}
-$('themeBtn').onclick=()=>{const n=isDark()?'light':'dark';document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('fmTheme',n);}catch(e){}paintTheme();};
+{let t='light';try{t=localStorage.getItem('fmTheme2')||'light';}catch(e){}document.documentElement.setAttribute('data-theme',t);}
+$('themeBtn').onclick=()=>{const n=isDark()?'light':'dark';document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('fmTheme2',n);}catch(e){}paintTheme();};
 mq.addEventListener?.('change',paintTheme);paintTheme();
 
 /* ---------- units ---------- */
@@ -666,12 +659,11 @@ function render(r,msg){const v=$('verdict');
 let scaleText='';
 function updateScale(){
   const nu=st.sListU,qu=st.vals.sQ0.u,pu=st.vals.sP0.u,tu=st.vals.sT0.u;
-  const hd=['Q ('+ul('Q',qu)+')','P ('+ul('P',pu)+')','T ('+ul('T',tu)+')','軸功率'];
-  $('scaleHead').innerHTML=hd.map(h=>`<span>${h}</span>`).join('');
+  $('scaleHead').innerHTML=`<th>轉速<small>${ul('N',nu)}</small></th><th>風量 Q<small>${ul('Q',qu)}</small></th><th>靜壓 P<small>${ul('P',pu)}</small></th><th>轉矩 T<small>${ul('T',tu)}</small></th><th>軸功率<small>mW</small></th><th>裕度<small>V</small></th>`;
   $('revF').classList.toggle('off',!st.sRevOn);
   const body=$('scaleBody'),err=$('sListErr');err.hidden=true;
   const N0=get('sN0'),Q0=get('sQ0'),P0=get('sP0'),T0=get('sT0');
-  if(!(N0>0&&Q0>0&&P0>0&&T0>0)){body.innerHTML='<div class="sempty">請輸入已知 N₀、Q₀、P₀、T₀。</div>';scaleText='';return;}
+  if(!(N0>0&&Q0>0&&P0>0&&T0>0)){body.innerHTML='<tr><td colspan="6" class="empty">請輸入已知 N₀、Q₀、P₀、T₀。</td></tr>';scaleText='';return;}
   const list=[];
   for(const t of (st.sList||'').split(/[\s,;，、]+/).filter(Boolean)){const v=parseFloat(t);if(!(v>0)){err.textContent='「'+t+'」不是有效的轉速。';err.hidden=false;continue;}list.push({n:toB('N',v,nu),kind:''});}
   if(st.sRevOn&&st.sRev.v>0){const tv=toB(revKind(),st.sRev.v,st.sRev.u),r=tv/({q:Q0,p:P0,t:T0}[st.sRevK]);list.push({n:st.sRevK==='q'?N0*r:N0*Math.sqrt(r),kind:'rev'});}
@@ -679,15 +671,13 @@ function updateScale(){
   const s=motorParams(),ok=motorReady(s);
   const lines=['N['+ul('N',nu)+']\tN/N0\tQ['+ul('Q',qu)+']\tP['+ul('P',pu)+']\tT['+ul('T',tu)+']\t軸功率[W]\t電壓裕度[V]'];
   body.innerHTML=list.map(o=>{const r=o.n/N0,Q=Q0*r,P=P0*r*r,T=T0*r*r,W=T*o.n*TAU/60;
-    let vm='–',vt='';if(ok){const m=motorModel(s,n=>T0*Math.pow(n/N0,2),o.n),pct=m.margin/m.Vav*100;
-      const c=m.margin<0?'bad':pct<5?'warn':'ok';vm='電壓裕度<b>'+fmt(m.margin,3)+' V</b><span class="pill '+c+'">'+(c==='bad'?'不足':c==='warn'?'偏低':'足夠')+'</span>';vt=fmt(m.margin,3);}
-    const d=x=>o.kind==='base'?'':(x>=0?'+':'')+x.toFixed(1)+'%';
-    const tag=o.kind==='base'?'<span class="pill base">已知</span>':o.kind==='rev'?'<span class="pill rev">反推</span>':'';
+    let vm='–',vt='',vc='';if(ok){const m=motorModel(s,n=>T0*Math.pow(n/N0,2),o.n),pct=m.margin/m.Vav*100;
+      vc=m.margin<0?'bad':pct<5?'warn':'ok';vm=fmt(m.margin,3)+'<small>'+(vc==='bad'?'不足':vc==='warn'?'偏低':'足夠')+'</small>';vt=fmt(m.margin,3);}
+    const d=x=>'<small>'+(o.kind==='base'?'&nbsp;':(x>=0?'+':'')+x.toFixed(1)+'%')+'</small>';
+    const tag='<small>'+(o.kind==='base'?'已知':o.kind==='rev'?'反推':'×'+r.toFixed(4))+'</small>';
     const nv=fromB('N',o.n,nu),qv=fromB('Q',Q,qu),pv=fromB('P',P,pu),tv=fromB('T',T,tu);
     lines.push([fmt(nv,6),r.toFixed(5),fmt(qv,5),fmt(pv,5),fmt(tv,5),fmt(W,4),vt].join('\t'));
-    const cell=(l,x,dd)=>`<div class="sc"><span class="sl">${l}</span><span class="sx">${x}</span><span class="sd">${dd}</span></div>`;
-    return `<div class="sit ${o.kind}"><div class="sh"><span class="sn">${fmt(nv,6)} <small>${ul('N',nu)}</small></span><span class="sr">×${r.toFixed(4)}</span>${tag}<span class="sv">${vm}</span></div>`+
-      `<div class="sg">${cell(hd[0],fmt(qv,5),d((r-1)*100))}${cell(hd[1],fmt(pv,5),d((r*r-1)*100))}${cell(hd[2],fmt(tv,5),d((r*r-1)*100))}${cell(hd[3],fW(W),o.kind==='base'?'':d((r*r*r-1)*100))}</div></div>`;}).join('');
+    return `<tr class="${o.kind}" title="N/N₀ = ${r.toFixed(5)}"><td>${fmt(nv,6)}${tag}</td><td>${fmt(qv,4)}${d((r-1)*100)}</td><td>${fmt(pv,4)}${d((r*r-1)*100)}</td><td>${fmt(tv,4)}${d((r*r-1)*100)}</td><td>${fmt(W*1e3,4)}${d((r*r*r-1)*100)}</td><td class="m ${vc}">${vm}</td></tr>`;}).join('');
   scaleText=lines.join('\n');}
 
 function copyText(t,msgEl,okMsg,el){const done=ok=>{$(msgEl).textContent=ok?okMsg:'無法複製，請手動選取';setTimeout(()=>$(msgEl).textContent='',2200);};
