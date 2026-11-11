@@ -134,7 +134,10 @@ details.card>summary::-webkit-details-marker{display:none}
 details.card>summary::after{content:"";margin-left:auto;width:8px;height:8px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);transition:transform .15s}
 details.card[open]>summary::after{transform:rotate(-135deg)}
 details.card>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:10px}
-details.card .body{padding:0 16px 14px}
+details.card .body{padding:0 16px 14px;display:flex;flex-direction:column;gap:12px}
+details.card>summary.hasrow::after{margin-left:10px}
+details.card>summary .row{margin-left:auto;flex-wrap:nowrap}
+@media (max-width:480px){details.card>summary{flex-wrap:wrap}details.card>summary .row{order:3;width:100%;justify-content:flex-end}}
 .gl{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);gap:0;font-size:13px}
 .gl dt,.gl dd{margin:0;padding:7px 0;border-bottom:1px solid var(--soft)}
 .gl dt{font-weight:500;padding-right:12px}
@@ -309,16 +312,16 @@ table.scale tr.rev td{background:var(--op-soft)}
   <div class="verdict" id="verdict"><b id="vTitle">–</b><span id="vText"></span></div>
 
   <div class="charts">
-    <section class="card chart">
-      <div class="sec-h"><h2>PQ 曲線與操作點</h2><button class="info" type="button" data-i="pq" aria-label="PQ 圖說明">i</button></div>
+    <details class="card chart" id="dPQ" open>
+      <summary><h2>PQ 曲線與操作點</h2><button class="info" type="button" data-i="pq" aria-label="PQ 圖說明">i</button></summary><div class="body">
       <svg id="pqChart" viewBox="0 0 640 320" role="img" aria-label="參考 PQ 曲線、換算後 PQ 曲線、系統阻抗曲線與目標操作點"></svg>
       <div class="legend"><span><i style="border-color:var(--ref);border-top-style:dashed"></i>參考 N₀</span><span><i style="border-color:var(--accent)"></i>換算 N</span><span><i style="border-color:var(--sys);border-top-style:dotted"></i>系統阻抗</span></div>
-    </section>
-    <section class="card chart">
-      <div class="sec-h"><h2>馬達 T–N 與負載</h2><button class="info" type="button" data-i="tn" aria-label="T–N 圖說明">i</button></div>
+    </div></details>
+    <details class="card chart" id="dTN" open>
+      <summary><h2>馬達 T–N 與負載</h2><button class="info" type="button" data-i="tn" aria-label="T–N 圖說明">i</button></summary><div class="body">
       <svg id="tnChart" viewBox="0 0 640 320" role="img" aria-label="馬達全壓 T-N 曲線、風扇負載轉矩曲線與交點"></svg>
       <div class="legend"><span><i style="border-color:var(--accent)"></i>馬達全壓</span><span><i style="border-color:var(--op)"></i>風扇負載</span></div>
-    </section>
+    </div></details>
   </div>
 
   <details class="card">
@@ -331,17 +334,17 @@ table.scale tr.rev td{background:var(--op-soft)}
     <ul class="notes" id="notes"></ul>
   </section>
 
-  <section class="card">
-    <div class="sec-h"><h2>規格摘要</h2>
-      <div class="row" style="margin-left:auto"><span class="tag" id="copyMsg" aria-live="polite"></span><button class="btn" id="copyBtn" type="button">複製</button></div></div>
-    <pre class="spec" id="spec"></pre>
-  </section>
+  <details class="card" id="dSpec" open>
+    <summary class="hasrow"><h2>規格摘要</h2>
+      <span class="row"><span class="tag" id="copyMsg" aria-live="polite"></span><button class="btn" id="copyBtn" type="button">複製</button></span></summary>
+    <div class="body"><pre class="spec" id="spec"></pre></div>
+  </details>
 
-  <section class="card">
-    <div class="sec-h"><h2>需求詢問單</h2><button class="info" type="button" data-i="inq" aria-label="需求詢問單說明">i</button>
-      <div class="row" style="margin-left:auto"><span class="tag" id="copyMsg3" aria-live="polite"></span><button class="btn ghost" id="inqClear" type="button">清除</button><button class="btn" id="inqCopy" type="button">複製詢問單</button></div></div>
-    <div id="inqForm" class="inq"></div>
-  </section>
+  <details class="card" id="dInq" open>
+    <summary class="hasrow"><h2>需求詢問單</h2><button class="info" type="button" data-i="inq" aria-label="需求詢問單說明">i</button>
+      <span class="row"><span class="tag" id="copyMsg3" aria-live="polite"></span><button class="btn ghost" id="inqClear" type="button">清除</button><button class="btn" id="inqCopy" type="button">複製詢問單</button></span></summary>
+    <div class="body"><div id="inqForm" class="inq"></div></div>
+  </details>
 
   <details class="card">
     <summary><h2>參數定義</h2></summary>
@@ -509,6 +512,12 @@ function setDrive(d){st.drive=d;$('dSq').setAttribute('aria-pressed',d==='sq');$
 $('mA').onclick=()=>{setMode('A');update();};$('mB').onclick=()=>{setMode('B');update();};
 $('dSq').onclick=()=>{setDrive('sq');update();};$('dSin').onclick=()=>{setDrive('sin');update();};
 setMode(st.mode);setDrive(st.drive);showL();
+
+/* ---------- collapsible cards ---------- */
+if(!st.open||typeof st.open!=='object')st.open={};
+document.querySelectorAll('details.card[id]').forEach(d=>{if(d.id in st.open)d.open=st.open[d.id];
+  d.addEventListener('toggle',()=>{st.open[d.id]=d.open;save();});});
+document.querySelectorAll('details.card>summary').forEach(sm=>sm.addEventListener('click',e=>{if(e.target.closest('button,select,input,a'))e.preventDefault();}));
 
 /* ---------- inquiry form ---------- */
 const INQ=[['op_pq','目標操作點 P、Q','例：55 Pa @ 0.66 L/s'],['fan_curve','參考 PQ 曲線','量測轉速與各點 Q、P，有轉矩或功率更好'],
