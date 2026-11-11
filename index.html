@@ -329,11 +329,6 @@ table.scale tr.rev td{background:var(--op-soft)}
     <div class="body tw"><table><tbody id="detail"></tbody></table></div>
   </details>
 
-  <section class="card">
-    <div class="sec-h"><h2>設計提醒</h2></div>
-    <ul class="notes" id="notes"></ul>
-  </section>
-
   <details class="card" id="dSpec" open>
     <summary class="hasrow"><h2>規格摘要</h2>
       <span class="row"><span class="tag" id="copyMsg" aria-live="polite"></span><button class="btn" id="copyBtn" type="button">複製</button></span></summary>
@@ -659,7 +654,7 @@ function update(){save();updateScale();
 
 function render(r,msg){const v=$('verdict');
   if(!r){['kN','kT','kI','kE'].forEach(k=>$(k).textContent='–');v.className='verdict warn';$('vTitle').textContent='無法計算';$('vText').textContent=msg;
-    $('detail').innerHTML='';$('notes').innerHTML='';$('spec').textContent='';$('pqChart').innerHTML='';$('tnChart').innerHTML='';return;}
+    $('detail').innerHTML='';$('spec').textContent='';$('pqChart').innerHTML='';$('tnChart').innerHTML='';return;}
   const{N,Tfan,m,s,pu,qu,dN,dT}=r;
   $('kN').textContent=fmt(fromB('N',N,dN),5);$('kT').textContent=fmt(fromB('T',Tfan,dT),4);
   $('kI').textContent=fmt(fromB('I',m.op.I,st.dispI),4);$('kIlab').textContent=m.sq?'相電流':'相電流峰值';$('kE').textContent=fmt(r.Pair/m.Pin*100,3);
@@ -669,7 +664,6 @@ function render(r,msg){const v=$('verdict');
   else if(pct<5){v.className='verdict warn';$('vTitle').textContent='裕度不足 5%';$('vText').textContent='剩 '+fmt(m.margin,3)+' V（'+pct.toFixed(1)+'%），全壓自然轉速 '+r.sN(m.Nmax)+'。';}
   else{v.className='verdict ok';$('vTitle').textContent='電壓足夠';$('vText').textContent='剩 '+fmt(m.margin,3)+' V（'+pct.toFixed(1)+'%），全壓自然轉速 '+r.sN(m.Nmax)+'。';}
   $('detail').innerHTML=r.det.map(d=>`<tr><td>${d[0]}</td><td class="n">${d[1]}</td><td class="d">${d[2]}</td></tr>`).join('');
-  $('notes').innerHTML=r.notes.length?r.notes.map(n=>`<li class="${n[0]}">${n[1]}</li>`).join(''):'<li>無。</li>';
   const cP=x=>fromB('P',x,pu),cQ=x=>fromB('Q',x,qu),series=[];
   let xmax=cQ(r.Qt)*1.6,ymax=cP(r.Pt)*1.6;
   if(r.rows){const sc=N/get('N0'),ref=r.rows.map(x=>[cQ(x.q),cP(x.p)]),scl=r.rows.map(x=>[cQ(x.q*sc),cP(x.p*sc*sc)]);
